@@ -1,0 +1,2 @@
+81b346fe9fe8292512ac7f80a8c81471fdc29829  doomgeneric-mips-be
+5b2e249b9c5133ec987b3ea77596381dc0d6bc1d  doom1.wad
