@@ -1,0 +1,386 @@
+#!/usr/bin/env bash
+# =============================================================================
+# DOOM-Router-Demo — build, deploy, launch, and persist DOOM on the router.
+#
+# Assumes the base exploit (../exploit.sh flash openwrt) has already put
+# LEDE/OpenWrt on the router. This script handles everything downstream of
+# that: cross-compiling doomgeneric for the router's real (big-endian MIPS)
+# CPU if needed, getting the correct WAD, deploying over SSH, launching it
+# right now, and setting up the reboot-persistence mechanism documented in
+# CHEATSHEET.md §7.5.
+#
+# SSH to this router needs legacy KEX (Dropbear on LEDE 17.01.4 only offers
+# algorithms modern OpenSSH disables by default) — see the $SSH_OPTS array
+# below, and the assessment report's Appendix B for the full rationale.
+#
+# Usage:
+#   ./doom_deploy.sh all          # build (if needed) -> wad -> deploy -> persist -> verify
+#   ./doom_deploy.sh build        # cross-compile doomgeneric only
+#   ./doom_deploy.sh wad          # fetch/verify doom1.wad only
+#   ./doom_deploy.sh deploy       # scp binary+wad to the router, launch now
+#   ./doom_deploy.sh persist      # install the /etc/rc.local autostart + serve firmware/
+#   ./doom_deploy.sh serve        # (re)start the local HTTP server standalone, foreground
+#   ./doom_deploy.sh reboot       # reboot the router over SSH, wait for it back
+#   ./doom_deploy.sh status       # is DOOM running right now? is it persisted?
+#
+# Companion: ../exploit.sh (the base TFTP-recovery exploit this builds on)
+# =============================================================================
+
+set -uo pipefail
+
+SCRIPT_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
+
+# ── CONFIG ──────────────────────────────────────────────────────────────────
+LEDE_LAN_IP="192.168.1.1"
+SERVER_IP="192.168.1.66"             # this VM's address on the router's LAN
+HTTP_PORT="8080"
+SERVER="http://${SERVER_IP}:${HTTP_PORT}"
+
+DOOMGENERIC_SRC="${SCRIPT_DIR}/doom-on-router/doomgeneric"
+FIRMWARE_DIR="${SCRIPT_DIR}/firmware"
+BIN_PATH="${FIRMWARE_DIR}/doomgeneric-mips-be"
+WAD_PATH="${FIRMWARE_DIR}/doom1.wad"
+WAD_SHA1_EXPECT="5b2e249b9c5133ec987b3ea77596381dc0d6bc1d"
+
+SDK_URL="https://archive.openwrt.org/releases/17.01.4/targets/ar71xx/generic/lede-sdk-17.01.4-ar71xx-generic_gcc-5.4.0_musl-1.1.16.Linux-x86_64.tar.xz"
+SDK_DIR="${SCRIPT_DIR}/.sdk"
+
+# SSH to this router needs legacy KEX — see header comment + report Appendix B.
+SSH_OPTS=(-o KexAlgorithms=diffie-hellman-group14-sha1 -o HostKeyAlgorithms=ssh-rsa
+          -o Ciphers=aes128-ctr -o MACs=hmac-sha1 -o StrictHostKeyChecking=no
+          -o UserKnownHostsFile=/dev/null -o ConnectTimeout=6)
+SCP_OPTS=(-O "${SSH_OPTS[@]}")   # -O: legacy SCP protocol — Dropbear has no sftp-server
+
+# ── COLORS / HELPERS ────────────────────────────────────────────────────────
+RED='\033[0;31m'; GRN='\033[0;32m'; YEL='\033[0;33m'; CYN='\033[0;36m'; RST='\033[0m'
+info()  { echo -e "${GRN}[+]${RST} $*"; }
+warn()  { echo -e "${YEL}[!]${RST} $*"; }
+fail()  { echo -e "${RED}[-]${RST} $*"; exit 1; }
+step()  { echo -e "\n${CYN}═══ STEP $1: $2 ═══${RST}"; }
+
+# shellcheck disable=SC2029  # intentional: "$@" is the literal remote command
+# this function's callers pass (already single-quoted at the call site, so
+# nothing expands client-side that shouldn't) — not inline $var interpolation.
+router_ssh()  { ssh "${SSH_OPTS[@]}" root@"$LEDE_LAN_IP" "$@"; }
+router_up()   { ping -c1 -W1 "$LEDE_LAN_IP" >/dev/null 2>&1; }
+
+require_router_up() {
+    router_up || fail "Router not reachable at $LEDE_LAN_IP. Run ../exploit.sh status (and check-network / flash openwrt if needed) first."
+}
+
+# =============================================================================
+# Same shape as ../exploit.sh's check_network — this one only needs the
+# post-flash LAN subnet (192.168.1.0/24), since by the time you're using
+# this script OpenWrt should already be flashed. If the base exploit's
+# L2 bridge was never set up, this fails the same way and tells you to
+# fix it in exploit.sh instead of duplicating that whole diagnostic.
+# =============================================================================
+cmd_check_network() {
+    step "N" "Network — LAN (post-flash) reachability check"
+
+    local iface
+    iface="$(ip -o -4 addr show | awk '/inet 192\.168\.1\./{print $2; exit}')"
+    if [[ -z "$iface" ]]; then
+        warn "No interface has an address on 192.168.1.0/24 yet."
+        warn "This is set up by the base exploit, not here — run:"
+        warn "  cd ../ && ./exploit.sh check-network"
+        return 1
+    fi
+    info "Using interface: $iface"
+
+    if router_up; then
+        info "Router reachable at $LEDE_LAN_IP ✓"
+        return 0
+    fi
+    warn "Router NOT reachable at $LEDE_LAN_IP from $iface."
+    warn "Either it's not flashed with OpenWrt yet (../exploit.sh flash openwrt),"
+    warn "or the L2 bridge needs fixing — see ../exploit.sh check-network."
+    return 1
+}
+
+cmd_ssh() {
+    require_router_up
+    exec router_ssh
+}
+
+# =============================================================================
+cmd_build() {
+    step "B" "Cross-compile doomgeneric for big-endian MIPS"
+
+    if [[ -x "$BIN_PATH" ]] && file "$BIN_PATH" 2>/dev/null | grep -q "MSB"; then
+        info "Already have a verified big-endian binary at $BIN_PATH — skipping build."
+        info "(delete it, or pass 'build' explicitly again after removing it, to force a rebuild)"
+        return 0
+    fi
+
+    if [[ ! -d "$SDK_DIR" ]]; then
+        info "Downloading OpenWrt ar71xx SDK (big-endian MIPS toolchain)..."
+        mkdir -p "$SDK_DIR"
+        curl -sS -L -o "$SDK_DIR/sdk.tar.xz" "$SDK_URL" || fail "SDK download failed"
+        tar -xf "$SDK_DIR/sdk.tar.xz" -C "$SDK_DIR"
+    fi
+    local toolchain_dir
+    toolchain_dir="$(find "$SDK_DIR" -maxdepth 3 -type d -name "toolchain-mips_*" | head -1)"
+    [[ -n "$toolchain_dir" ]] || fail "Couldn't find the toolchain dir inside $SDK_DIR"
+    export PATH="$toolchain_dir/bin:$PATH"
+
+    [[ -d "$DOOMGENERIC_SRC" ]] || fail "Missing $DOOMGENERIC_SRC — doom-on-router not checked out here?"
+    ( cd "$DOOMGENERIC_SRC" \
+      && make -f Makefile.mips clean \
+      && make -f Makefile.mips CROSS_COMPILE=mips-openwrt-linux-musl- STATIC_LINKING=1 all
+    ) || fail "Build failed"
+
+    file "$DOOMGENERIC_SRC/build/doomgeneric" | grep -q "MSB" \
+        || fail "Built binary is NOT big-endian — something's wrong with the toolchain pick"
+    mkdir -p "$FIRMWARE_DIR"
+    cp "$DOOMGENERIC_SRC/build/doomgeneric" "$BIN_PATH"
+    info "Built + verified big-endian MIPS binary → $BIN_PATH ✓"
+}
+
+# =============================================================================
+cmd_wad() {
+    step "W" "Get the full (non-aliased) shareware WAD"
+
+    if [[ -f "$WAD_PATH" ]] && [[ "$(sha1sum "$WAD_PATH" | cut -d' ' -f1)" == "$WAD_SHA1_EXPECT" ]]; then
+        info "Correct doom1.wad already present ✓"
+        return 0
+    fi
+
+    warn "Don't use a space-trimmed WAD (e.g. squashware-1lev) — it aliases all 9"
+    warn "episode map markers to the same underlying data (level-select mismatch bug)."
+
+    local tmp="${SCRIPT_DIR}/.wad_fetch"
+    mkdir -p "$tmp"
+    if apt-get download doom-wad-shareware -o Dir::Cache="$tmp" >/dev/null 2>&1 \
+        || ( cd "$tmp" && apt-get download doom-wad-shareware >/dev/null 2>&1 ); then
+        local deb
+        deb="$(find "$tmp" -maxdepth 1 -name '*.deb' | head -1)"
+        dpkg-deb -x "$deb" "$tmp/extracted"
+        mkdir -p "$FIRMWARE_DIR"
+        cp "$tmp/extracted/usr/share/games/doom/doom1.wad" "$WAD_PATH"
+    else
+        fail "Couldn't fetch doom-wad-shareware via apt. Get doom1.wad (SHA1 $WAD_SHA1_EXPECT) some other way and place it at $WAD_PATH"
+    fi
+
+    local got
+    got="$(sha1sum "$WAD_PATH" | cut -d' ' -f1)"
+    [[ "$got" == "$WAD_SHA1_EXPECT" ]] || fail "SHA1 mismatch on fetched WAD ($got != $WAD_SHA1_EXPECT)"
+    info "doom1.wad verified (SHA1 $WAD_SHA1_EXPECT) ✓"
+    rm -rf "$tmp"
+}
+
+# =============================================================================
+cmd_serve() {
+    step "H" "Serve $FIRMWARE_DIR over HTTP for the router to fetch from"
+    [[ -f "$BIN_PATH" && -f "$WAD_PATH" ]] || fail "Missing binary or WAD — run 'build'/'wad' first"
+
+    if ss -ltn 2>/dev/null | grep -q ":${HTTP_PORT}"; then
+        warn "Something's already listening on :${HTTP_PORT} — killing it first (stale server, if any, from a prior run/move)."
+        pkill -9 -f "http.server ${HTTP_PORT}" 2>/dev/null
+        sleep 1
+    fi
+
+    if ! ip -4 addr show | grep -q "inet ${SERVER_IP}/"; then
+        warn "No interface has ${SERVER_IP} — the router's rc.local fetch will fail."
+        warn "Run: ../exploit.sh check-network   (and ip addr add ${SERVER_IP}/24 dev <iface> if needed)"
+    fi
+
+    info "Serving $FIRMWARE_DIR on ${SERVER_IP}:${HTTP_PORT} (leave this running for the demo)..."
+    cd "$FIRMWARE_DIR" && exec python3 -m http.server "$HTTP_PORT" --bind "$SERVER_IP"
+}
+
+ensure_server_running() {
+    if ss -ltn 2>/dev/null | grep -q ":${HTTP_PORT}"; then
+        # Make sure it's actually serving from the CURRENT firmware dir path,
+        # not a stale one left over from a directory move (Python's
+        # http.server caches the directory as a string at startup, not via
+        # getcwd() per-request — a real bug hit during development).
+        if curl -sS -m3 -o /dev/null -w "%{http_code}" "$SERVER/doomgeneric-mips-be" 2>/dev/null | grep -q "200"; then
+            info "Firmware HTTP server already up and serving correctly ✓"
+            return 0
+        fi
+        warn "Server on :${HTTP_PORT} is up but NOT serving correctly (stale path?) — restarting it."
+        pkill -9 -f "http.server ${HTTP_PORT}" 2>/dev/null
+        sleep 1
+    fi
+    info "Starting firmware HTTP server in the background..."
+    ( cd "$FIRMWARE_DIR" && nohup python3 -m http.server "$HTTP_PORT" --bind "$SERVER_IP" >/tmp/doom_httpd.log 2>&1 & )
+    sleep 1
+    curl -sS -m3 -o /dev/null -w "%{http_code}" "$SERVER/doomgeneric-mips-be" 2>/dev/null | grep -q "200" \
+        || fail "Server still not serving correctly after restart — check /tmp/doom_httpd.log"
+    info "Firmware HTTP server up ✓"
+}
+
+# =============================================================================
+cmd_deploy() {
+    step "D" "Deploy doomgeneric + WAD to the router and launch now"
+    require_router_up
+    [[ -f "$BIN_PATH" && -f "$WAD_PATH" ]] || fail "Missing binary or WAD — run 'build'/'wad' first (or 'all')"
+
+    router_ssh 'killall doomgeneric 2>/dev/null; true'
+    scp "${SCP_OPTS[@]}" "$BIN_PATH" root@"$LEDE_LAN_IP":/tmp/doomgeneric || fail "scp of binary failed"
+    scp "${SCP_OPTS[@]}" "$WAD_PATH" root@"$LEDE_LAN_IP":/tmp/doom1.wad   || fail "scp of WAD failed"
+    router_ssh 'chmod +x /tmp/doomgeneric; cd /tmp && ./doomgeneric >/tmp/doom.log 2>&1 &'
+    sleep 2
+
+    if curl -sS -m5 -o /dev/null -w "%{http_code}" "http://${LEDE_LAN_IP}:8000/" 2>/dev/null | grep -q "200"; then
+        info "DOOM is running — http://${LEDE_LAN_IP}:8000/ ✓"
+    else
+        warn "Not serving yet — checking the log on the router:"
+        router_ssh 'cat /tmp/doom.log' 2>/dev/null
+    fi
+}
+
+# =============================================================================
+cmd_persist() {
+    step "P" "Install reboot-persistence (/etc/rc.local) + start the firmware server"
+    require_router_up
+    ensure_server_running
+
+    local rc_local
+    rc_local="$(mktemp)"
+    cat > "$rc_local" <<EOF
+# Put your custom commands here that should be executed once
+# the system init finished. By default this file does nothing.
+
+# DOOM-on-router autostart: fetch binary+WAD from the LAN host and launch.
+# /tmp is tmpfs (wiped on reboot), so this re-fetches every boot instead.
+# br-lan doesn't reach forwarding state until ~18-20s after boot (observed),
+# so wait for the server to actually be reachable instead of a blind sleep
+# -- a fixed 'sleep 5' here previously caused a real, reproducible failure
+# (the WAD fetch raced the network and silently failed while the smaller
+# binary fetch happened to land afterward).
+SERVER="${SERVER}"
+( i=0
+  while [ "\$i" -lt 30 ]; do
+    wget -q --spider "\$SERVER/doom1.wad" 2>/dev/null && break
+    sleep 1
+    i=\$((i + 1))
+  done
+  wget -q -O /tmp/doom1.wad "\$SERVER/doom1.wad"
+  wget -q -O /tmp/doomgeneric "\$SERVER/doomgeneric-mips-be"
+  chmod +x /tmp/doomgeneric
+  cd /tmp && ./doomgeneric >/tmp/doom.log 2>&1
+) &
+
+exit 0
+EOF
+    scp "${SCP_OPTS[@]}" "$rc_local" root@"$LEDE_LAN_IP":/etc/rc.local || fail "scp of rc.local failed"
+    rm -f "$rc_local"
+    router_ssh 'chmod +x /etc/rc.local'
+    info "Persistence installed ✓ (verify with: $0 reboot)"
+    warn "Remember: the firmware HTTP server (this VM, :${HTTP_PORT}) must stay running"
+    warn "for the rest of the demo — persistence depends on it being reachable at boot."
+}
+
+# =============================================================================
+cmd_reboot() {
+    step "R" "Reboot the router and wait for it to come back"
+    require_router_up
+    router_ssh reboot 2>/dev/null
+    info "Waiting for it to go down..."
+    local n=0
+    while router_up; do sleep 1; n=$((n+1)); [[ $n -gt 20 ]] && break; done
+    info "Waiting for it to come back..."
+    n=0
+    until router_up; do
+        sleep 2; n=$((n+1))
+        [[ $n -gt 45 ]] && fail "Still down after 90s."
+    done
+    info "Back up ✓ — giving rc.local's fetch loop a moment..."
+    sleep 15
+    cmd_status
+}
+
+# =============================================================================
+cmd_status() {
+    step "S" "Current DOOM status"
+    if ! router_up; then
+        warn "Router not reachable at $LEDE_LAN_IP"
+        return 1
+    fi
+    if curl -sS -m5 -o /dev/null -w "%{http_code}" "http://${LEDE_LAN_IP}:8000/" 2>/dev/null | grep -q "200"; then
+        info "DOOM is running and serving — http://${LEDE_LAN_IP}:8000/ ✓"
+    else
+        # Distinguish "not running at all" from the specific, observed
+        # failure mode: process alive (even busy/running) but NOT actually
+        # listening on 8000 -- seen in practice when a stale/dropped browser
+        # connection leaves mongoose's event loop stuck retrying a write
+        # that will never drain, instead of servicing new connections.
+        local proc_line listen_line
+        proc_line="$(router_ssh 'ps w | grep doomgeneric | grep -v grep' 2>/dev/null)"
+        listen_line="$(router_ssh 'netstat -ltn 2>/dev/null | grep 8000' 2>/dev/null)"
+        if [[ -n "$proc_line" && -z "$listen_line" ]]; then
+            warn "DOOM process IS running but NOT listening on 8000 — looks stuck"
+            warn "(a stale/dead browser connection can wedge mongoose's single-threaded"
+            warn "event loop into retrying a write forever instead of accepting new ones)."
+            warn "Fix: $0 restart"
+        else
+            warn "DOOM is NOT currently serving."
+            router_ssh 'ls -la /tmp/doomgeneric /tmp/doom1.wad 2>&1; cat /tmp/doom.log 2>&1 | tail -10' 2>/dev/null
+        fi
+    fi
+    if ss -ltn 2>/dev/null | grep -q ":${HTTP_PORT}"; then
+        info "Firmware HTTP server (for persistence) is running on this VM ✓"
+    else
+        warn "Firmware HTTP server is NOT running — persistence will fail on next reboot. Run: $0 serve  (or 'persist')"
+    fi
+}
+
+cmd_restart() {
+    step "RS" "Kill + relaunch doomgeneric (fixes the stuck-not-listening case)"
+    require_router_up
+    router_ssh 'killall -9 doomgeneric 2>/dev/null; sleep 1; cd /tmp && ./doomgeneric >/tmp/doom.log 2>&1 &'
+    sleep 2
+    if curl -sS -m5 -o /dev/null -w "%{http_code}" "http://${LEDE_LAN_IP}:8000/" 2>/dev/null | grep -q "200"; then
+        info "Relaunched and serving — http://${LEDE_LAN_IP}:8000/ ✓"
+    else
+        warn "Still not serving after restart — check: $0 status"
+    fi
+}
+
+cmd_all() {
+    cmd_build
+    cmd_wad
+    require_router_up
+    cmd_deploy
+    cmd_persist
+    cmd_status
+}
+
+usage() {
+    cat <<EOF
+Usage: $0 <command>
+
+  all            build (if needed) -> wad -> deploy -> persist -> status   [default end-to-end]
+  build          cross-compile doomgeneric for big-endian MIPS
+  wad            fetch/verify the correct full doom1.wad
+  deploy         scp binary+wad to the router, launch now
+  persist        install /etc/rc.local autostart + start the firmware HTTP server
+  serve          run the firmware HTTP server in the foreground (Ctrl-C to stop)
+
+  Same shape as ../exploit.sh, scoped to the post-flash LAN:
+  check-network  LAN (192.168.1.0/24) reachability check only
+  status         is DOOM running right now? is the HTTP server up for persistence?
+  ssh            open an SSH session to the router
+  reboot         reboot the router over SSH, wait for it back, report status
+  restart        kill + relaunch doomgeneric only (fast fix for: process alive,
+                 not listening on 8000 -- e.g. a stale browser connection wedged
+                 mongoose's event loop; no need to re-deploy or reboot for this)
+EOF
+}
+
+case "${1:-all}" in
+    all)            cmd_all ;;
+    build)          cmd_build ;;
+    wad)            cmd_wad ;;
+    deploy)         cmd_deploy ;;
+    persist)        cmd_persist ;;
+    serve)          cmd_serve ;;
+    check-network)  cmd_check_network ;;
+    reboot)         cmd_reboot ;;
+    restart)        cmd_restart ;;
+    status)         cmd_status ;;
+    ssh)            cmd_ssh ;;
+    *)              usage; exit 1 ;;
+esac
