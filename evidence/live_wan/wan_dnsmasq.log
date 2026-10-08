@@ -1,0 +1,144 @@
+
+dnsmasq: cannot read /tmp/routerenum/dnsmasq.conf: No such file or directory
+Sep 12 07:39:52 dnsmasq[161539]: started, version 2.93 cachesize 150
+Sep 12 07:39:52 dnsmasq[161539]: compile time options: IPv6 GNU-getopt DBus no-UBus i18n IDN2 DHCP DHCPv6 no-Lua TFTP conntrack ipset nftset auth DNSSEC loop-detect inotify dumpfile
+Sep 12 07:39:52 dnsmasq[161539]: warning: no upstream servers configured
+Sep 12 07:39:52 dnsmasq-dhcp[161539]: DHCP, IP range 192.168.0.50 -- 192.168.0.100, lease time 12h
+Sep 12 07:39:52 dnsmasq-dhcp[161539]: DHCPv6, IP range ::50 -- ::ff, lease time 12h, template for eth1
+Sep 12 07:39:52 dnsmasq-dhcp[161539]: router advertisement on eth1
+Sep 12 07:39:52 dnsmasq-dhcp[161539]: DHCPv6, IP range fd00::50 -- fd00::ff, lease time 12h, constructed for eth1
+Sep 12 07:39:52 dnsmasq-dhcp[161539]: router advertisement on fd00::, constructed for eth1
+Sep 12 07:39:52 dnsmasq-dhcp[161539]: IPv6 router advertisement enabled
+Sep 12 07:39:52 dnsmasq-dhcp[161539]: DHCP, sockets bound exclusively to interface eth1
+Sep 12 07:39:52 dnsmasq[161539]: read /etc/hosts - 8 names
+Sep 12 07:39:52 dnsmasq[161539]: exiting on receipt of SIGTERM
+Sep 12 07:44:13 dnsmasq[166626]: started, version 2.93 cachesize 150
+Sep 12 07:44:13 dnsmasq[166626]: compile time options: IPv6 GNU-getopt DBus no-UBus i18n IDN2 DHCP DHCPv6 no-Lua TFTP conntrack ipset nftset auth DNSSEC loop-detect inotify dumpfile
+Sep 12 07:44:13 dnsmasq[166626]: warning: no upstream servers configured
+Sep 12 07:44:13 dnsmasq-dhcp[166626]: DHCP, IP range 192.168.0.50 -- 192.168.0.100, lease time 12h
+Sep 12 07:44:13 dnsmasq-dhcp[166626]: DHCPv6, IP range ::50 -- ::ff, lease time 12h, template for eth1
+Sep 12 07:44:13 dnsmasq-dhcp[166626]: router advertisement on eth1
+Sep 12 07:44:13 dnsmasq-dhcp[166626]: DHCPv6, IP range fd00::50 -- fd00::ff, lease time 12h, constructed for eth1
+Sep 12 07:44:13 dnsmasq-dhcp[166626]: router advertisement on fd00::, constructed for eth1
+Sep 12 07:44:13 dnsmasq-dhcp[166626]: IPv6 router advertisement enabled
+Sep 12 07:44:13 dnsmasq-dhcp[166626]: DHCP, sockets bound exclusively to interface eth1
+Sep 12 07:44:13 dnsmasq[166626]: read /etc/hosts - 8 names
+Sep 12 07:44:13 dnsmasq[166626]: exiting on receipt of SIGTERM
+Sep 12 07:46:33 dnsmasq[167918]: started, version 2.93 cachesize 150
+Sep 12 07:46:33 dnsmasq[167918]: compile time options: IPv6 GNU-getopt DBus no-UBus i18n IDN2 DHCP DHCPv6 no-Lua TFTP conntrack ipset nftset auth DNSSEC loop-detect inotify dumpfile
+Sep 12 07:46:33 dnsmasq[167918]: warning: no upstream servers configured
+Sep 12 07:46:33 dnsmasq-dhcp[167918]: DHCP, IP range 192.168.0.50 -- 192.168.0.100, lease time 12h
+Sep 12 07:46:33 dnsmasq-dhcp[167918]: DHCPv6, IP range ::50 -- ::ff, lease time 12h, template for eth1
+Sep 12 07:46:33 dnsmasq-dhcp[167918]: router advertisement on eth1
+Sep 12 07:46:33 dnsmasq-dhcp[167918]: DHCPv6, IP range fd00::50 -- fd00::ff, lease time 12h, constructed for eth1
+Sep 12 07:46:33 dnsmasq-dhcp[167918]: router advertisement on fd00::, constructed for eth1
+Sep 12 07:46:33 dnsmasq-dhcp[167918]: IPv6 router advertisement enabled
+Sep 12 07:46:33 dnsmasq-dhcp[167918]: DHCP, sockets bound exclusively to interface eth1
+Sep 12 07:46:33 dnsmasq[167918]: read /etc/hosts - 8 names
+Sep 12 07:46:34 dnsmasq-dhcp[167918]: RTR-ADVERT(eth1) fd00::
+Sep 12 07:46:40 dnsmasq-dhcp[167918]: RTR-ADVERT(eth1) fd00::
+Sep 12 07:46:50 dnsmasq-dhcp[167918]: RTR-ADVERT(eth1) fd00::
+Sep 12 07:46:56 dnsmasq-dhcp[167918]: RTR-ADVERT(eth1) fd00::
+Sep 12 07:47:10 dnsmasq-dhcp[167918]: RTR-ADVERT(eth1) fd00::
+Sep 12 07:47:17 dnsmasq-dhcp[167918]: RTR-ADVERT(eth1) fd00::
+Sep 12 07:47:24 dnsmasq-dhcp[167918]: RTR-ADVERT(eth1) fd00::
+Sep 12 07:47:31 dnsmasq-dhcp[167918]: RTR-ADVERT(eth1) fd00::
+Sep 12 07:47:48 dnsmasq-dhcp[167918]: RTR-ADVERT(eth1) fd00::
+Sep 12 07:47:55 dnsmasq-dhcp[167918]: RTR-ADVERT(eth1) fd00::
+Sep 12 07:48:04 dnsmasq-dhcp[167918]: RTR-ADVERT(eth1) fd00::
+Sep 12 07:48:12 dnsmasq-dhcp[167918]: RTR-ADVERT(eth1) fd00::
+Sep 12 07:48:21 dnsmasq-dhcp[167918]: RTR-ADVERT(eth1) fd00::
+Sep 12 07:48:29 dnsmasq-dhcp[167918]: RTR-ADVERT(eth1) fd00::
+Sep 12 07:48:36 dnsmasq-dhcp[167918]: RTR-ADVERT(eth1) fd00::
+Sep 12 07:48:45 dnsmasq-dhcp[167918]: RTR-ADVERT(eth1) fd00::
+Sep 12 07:48:52 dnsmasq-dhcp[167918]: RTR-ADVERT(eth1) fd00::
+Sep 12 07:49:01 dnsmasq-dhcp[167918]: RTR-ADVERT(eth1) fd00::
+Sep 12 07:49:09 dnsmasq-dhcp[167918]: RTR-ADVERT(eth1) fd00::
+Sep 12 07:49:17 dnsmasq-dhcp[167918]: RTR-ADVERT(eth1) fd00::
+Sep 12 07:49:26 dnsmasq-dhcp[167918]: RTR-ADVERT(eth1) fd00::
+Sep 12 07:49:34 dnsmasq-dhcp[167918]: RTR-ADVERT(eth1) fd00::
+Sep 12 07:49:41 dnsmasq-dhcp[167918]: RTR-ADVERT(eth1) fd00::
+Sep 12 07:49:50 dnsmasq-dhcp[167918]: RTR-ADVERT(eth1) fd00::
+Sep 12 07:49:57 dnsmasq-dhcp[167918]: RTR-ADVERT(eth1) fd00::
+Sep 12 07:50:05 dnsmasq-dhcp[167918]: RTR-ADVERT(eth1) fd00::
+Sep 12 07:50:13 dnsmasq-dhcp[167918]: RTR-ADVERT(eth1) fd00::
+Sep 12 07:50:20 dnsmasq-dhcp[167918]: RTR-ADVERT(eth1) fd00::
+Sep 12 07:50:27 dnsmasq-dhcp[167918]: RTR-ADVERT(eth1) fd00::
+Sep 12 07:50:36 dnsmasq-dhcp[167918]: RTR-ADVERT(eth1) fd00::
+Sep 12 07:50:43 dnsmasq-dhcp[167918]: RTR-ADVERT(eth1) fd00::
+Sep 12 07:50:52 dnsmasq-dhcp[167918]: RTR-ADVERT(eth1) fd00::
+Sep 12 07:50:59 dnsmasq-dhcp[167918]: RTR-ADVERT(eth1) fd00::
+Sep 12 07:51:07 dnsmasq-dhcp[167918]: RTR-ADVERT(eth1) fd00::
+Sep 12 07:51:15 dnsmasq-dhcp[167918]: RTR-ADVERT(eth1) fd00::
+Sep 12 07:51:24 dnsmasq-dhcp[167918]: RTR-ADVERT(eth1) fd00::
+Sep 12 07:51:32 dnsmasq-dhcp[167918]: RTR-ADVERT(eth1) fd00::
+Sep 12 07:51:41 dnsmasq-dhcp[167918]: RTR-ADVERT(eth1) fd00::
+Sep 12 07:51:49 dnsmasq-dhcp[167918]: RTR-ADVERT(eth1) fd00::
+Sep 12 07:51:58 dnsmasq-dhcp[167918]: RTR-ADVERT(eth1) fd00::
+Sep 12 07:52:05 dnsmasq-dhcp[167918]: RTR-ADVERT(eth1) fd00::
+Sep 12 07:52:12 dnsmasq-dhcp[167918]: RTR-ADVERT(eth1) fd00::
+Sep 12 07:52:19 dnsmasq-dhcp[167918]: RTR-ADVERT(eth1) fd00::
+Sep 12 07:52:26 dnsmasq-dhcp[167918]: RTR-ADVERT(eth1) fd00::
+Sep 12 07:52:34 dnsmasq-dhcp[167918]: RTR-ADVERT(eth1) fd00::
+Sep 12 07:52:42 dnsmasq-dhcp[167918]: RTR-ADVERT(eth1) fd00::
+Sep 12 07:52:49 dnsmasq-dhcp[167918]: RTR-ADVERT(eth1) fd00::
+Sep 12 07:52:57 dnsmasq-dhcp[167918]: RTR-ADVERT(eth1) fd00::
+Sep 12 07:53:05 dnsmasq-dhcp[167918]: RTR-ADVERT(eth1) fd00::
+Sep 12 07:53:13 dnsmasq-dhcp[167918]: RTR-ADVERT(eth1) fd00::
+Sep 12 08:15:16 dnsmasq-dhcp[167918]: RTR-SOLICIT(eth1) 
+Sep 12 08:15:16 dnsmasq-dhcp[167918]: RTR-ADVERT(eth1) fd00::
+Sep 12 08:15:16 dnsmasq-dhcp[167918]: RTR-ADVERT(eth1) fd00::
+Sep 12 08:15:25 dnsmasq-dhcp[167918]: RTR-ADVERT(eth1) fd00::
+Sep 12 08:15:33 dnsmasq-dhcp[167918]: RTR-ADVERT(eth1) fd00::
+Sep 12 08:15:40 dnsmasq-dhcp[167918]: RTR-ADVERT(eth1) fd00::
+Sep 12 08:15:47 dnsmasq-dhcp[167918]: RTR-ADVERT(eth1) fd00::
+Sep 12 08:15:54 dnsmasq-dhcp[167918]: RTR-ADVERT(eth1) fd00::
+Sep 12 08:16:01 dnsmasq-dhcp[167918]: RTR-ADVERT(eth1) fd00::
+Sep 12 08:16:09 dnsmasq-dhcp[167918]: RTR-ADVERT(eth1) fd00::
+Sep 12 08:16:18 dnsmasq-dhcp[167918]: RTR-ADVERT(eth1) fd00::
+Sep 12 08:16:25 dnsmasq-dhcp[167918]: RTR-ADVERT(eth1) fd00::
+Sep 12 08:16:34 dnsmasq-dhcp[167918]: RTR-ADVERT(eth1) fd00::
+Sep 12 08:16:41 dnsmasq-dhcp[167918]: RTR-ADVERT(eth1) fd00::
+Sep 12 08:16:48 dnsmasq-dhcp[167918]: RTR-ADVERT(eth1) fd00::
+Sep 12 08:16:55 dnsmasq-dhcp[167918]: RTR-ADVERT(eth1) fd00::
+Sep 12 08:17:04 dnsmasq-dhcp[167918]: RTR-ADVERT(eth1) fd00::
+Sep 12 08:17:13 dnsmasq-dhcp[167918]: RTR-ADVERT(eth1) fd00::
+Sep 12 08:17:21 dnsmasq-dhcp[167918]: RTR-ADVERT(eth1) fd00::
+Sep 12 08:17:28 dnsmasq-dhcp[167918]: RTR-ADVERT(eth1) fd00::
+Sep 12 08:17:37 dnsmasq-dhcp[167918]: RTR-ADVERT(eth1) fd00::
+Sep 12 08:17:45 dnsmasq-dhcp[167918]: RTR-ADVERT(eth1) fd00::
+Sep 12 08:17:53 dnsmasq-dhcp[167918]: RTR-ADVERT(eth1) fd00::
+Sep 12 08:18:01 dnsmasq-dhcp[167918]: RTR-ADVERT(eth1) fd00::
+Sep 12 08:18:10 dnsmasq-dhcp[167918]: RTR-ADVERT(eth1) fd00::
+Sep 12 08:18:17 dnsmasq-dhcp[167918]: RTR-ADVERT(eth1) fd00::
+Sep 12 08:18:24 dnsmasq-dhcp[167918]: RTR-ADVERT(eth1) fd00::
+Sep 12 08:18:33 dnsmasq-dhcp[167918]: RTR-ADVERT(eth1) fd00::
+Sep 12 08:18:41 dnsmasq-dhcp[167918]: RTR-ADVERT(eth1) fd00::
+Sep 12 08:18:48 dnsmasq-dhcp[167918]: RTR-ADVERT(eth1) fd00::
+Sep 12 08:18:50 dnsmasq-dhcp[167918]: router advertisement on fd00::, old prefix for eth1
+Sep 12 08:18:51 dnsmasq-dhcp[167918]: RTR-ADVERT(eth1) fd00:: old prefix
+Sep 12 08:18:52 dnsmasq-dhcp[167918]: DHCPv6, IP range fd00::50 -- fd00::ff, lease time 12h, constructed for eth1
+Sep 12 08:18:52 dnsmasq-dhcp[167918]: router advertisement on fd00::, constructed for eth1
+Sep 12 08:19:01 dnsmasq-dhcp[167918]: RTR-ADVERT(eth1) fd00::
+Sep 12 08:19:16 dnsmasq-dhcp[167918]: RTR-ADVERT(eth1) fd00::
+Sep 12 08:19:21 dnsmasq-dhcp[167918]: RTR-ADVERT(eth1) fd00::
+Sep 12 08:19:27 dnsmasq-dhcp[167918]: RTR-ADVERT(eth1) fd00::
+Sep 12 08:19:38 dnsmasq-dhcp[167918]: router advertisement on fd00::, old prefix for eth1
+Sep 12 08:19:39 dnsmasq-dhcp[167918]: RTR-ADVERT(eth1) fd00:: old prefix
+Sep 12 08:19:40 dnsmasq-dhcp[167918]: RTR-SOLICIT(eth1) 
+Sep 12 08:19:40 dnsmasq-dhcp[167918]: RTR-ADVERT(eth1) fd00:: old prefix
+Sep 12 08:19:52 dnsmasq-dhcp[167918]: RTR-ADVERT(eth1) fd00:: old prefix
+Sep 12 08:20:00 dnsmasq-dhcp[167918]: RTR-ADVERT(eth1) fd00:: old prefix
+Sep 12 08:20:16 dnsmasq-dhcp[167918]: RTR-ADVERT(eth1) fd00:: old prefix
+Sep 12 08:20:27 dnsmasq-dhcp[167918]: RTR-SOLICIT(eth1) 
+Sep 12 08:20:27 dnsmasq-dhcp[167918]: RTR-ADVERT(eth1) fd00:: old prefix
+Sep 12 08:20:34 dnsmasq-dhcp[167918]: RTR-ADVERT(eth1) fd00:: old prefix
+Sep 12 08:20:40 dnsmasq-dhcp[167918]: RTR-ADVERT(eth1) fd00:: old prefix
+Sep 12 08:20:49 dnsmasq-dhcp[167918]: RTR-ADVERT(eth1) fd00:: old prefix
+Sep 12 08:20:56 dnsmasq-dhcp[167918]: RTR-ADVERT(eth1) fd00:: old prefix
+Sep 12 08:21:05 dnsmasq-dhcp[167918]: RTR-ADVERT(eth1) fd00:: old prefix
+Sep 12 08:21:13 dnsmasq-dhcp[167918]: RTR-ADVERT(eth1) fd00:: old prefix
+Sep 12 08:21:14 dnsmasq-dhcp[167918]: RTR-SOLICIT(eth1) 
+Sep 12 08:21:14 dnsmasq-dhcp[167918]: RTR-ADVERT(eth1) fd00:: old prefix
+Sep 12 08:21:20 dnsmasq-dhcp[167918]: RTR-ADVERT(eth1) fd00:: old prefix
+Sep 12 08:21:28 dnsmasq-dhcp[167918]: RTR-ADVERT(eth1) fd00:: old prefix

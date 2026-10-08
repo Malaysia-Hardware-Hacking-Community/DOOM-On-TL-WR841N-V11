@@ -1,0 +1,26 @@
+# Nmap 7.99 scan initiated Sat Sep 12 04:12:38 2026 as: /usr/lib/nmap/nmap --privileged -Pn -sU -T4 --top-ports 100 -p- -r --host-timeout 90s -oA /tmp/routerenum/nmap/udp100 192.168.0.1
+Warning: 192.168.0.1 giving up on port because retransmission cap hit (6).
+Nmap scan report for 192.168.0.1
+Host is up (0.00040s latency).
+Not shown: 83 closed udp ports (port-unreach)
+PORT     STATE         SERVICE
+53/udp   filtered      domain
+67/udp   open|filtered dhcps
+120/udp  open|filtered cfdptkt
+123/udp  open|filtered ntp
+136/udp  open|filtered profile
+137/udp  open|filtered netbios-ns
+139/udp  open|filtered netbios-ssn
+162/udp  open|filtered snmptrap
+427/udp  open|filtered svrloc
+445/udp  open|filtered microsoft-ds
+500/udp  open|filtered isakmp
+515/udp  open|filtered printer
+520/udp  open|filtered route
+623/udp  open|filtered asf-rmcp
+631/udp  open|filtered ipp
+997/udp  open|filtered maitrd
+1900/udp open          upnp
+MAC Address: 98:DE:D0:D4:05:C6 (TP-Link Technologies)
+
+# Nmap done at Sat Sep 12 04:14:03 2026 -- 1 IP address (1 host up) scanned in 84.18 seconds

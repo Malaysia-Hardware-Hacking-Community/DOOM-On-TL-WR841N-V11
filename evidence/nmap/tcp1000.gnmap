@@ -1,0 +1,4 @@
+# Nmap 7.99 scan initiated Sat Sep 12 04:12:21 2026 as: /usr/lib/nmap/nmap --privileged -Pn -sV -T4 --top-ports 1000 -oA /tmp/routerenum/nmap/tcp1000 192.168.0.1
+Host: 192.168.0.1 ()	Status: Up
+Host: 192.168.0.1 ()	Ports: 22/open/tcp//ssh//Dropbear sshd 2012.55 (protocol 2.0)/, 80/open/tcp//http//TP-LINK WR841N WAP http config/, 1900/open/tcp//upnp//ipOS upnpd (TP-LINK TL-WR841N WAP 11.0; UPnP 1.0)/	Ignored State: closed (997)
+# Nmap done at Sat Sep 12 04:12:28 2026 -- 1 IP address (1 host up) scanned in 7.01 seconds

@@ -1,0 +1,11 @@
+# Nmap 7.99 scan initiated Sat Sep 12 04:16:10 2026 as: /usr/lib/nmap/nmap --privileged -Pn -sS -T4 -p1-65535 -oA /tmp/routerenum/nmap/tcpfull 192.168.0.1
+Nmap scan report for 192.168.0.1
+Host is up (0.00083s latency).
+Not shown: 65532 closed tcp ports (reset)
+PORT     STATE SERVICE
+22/tcp   open  ssh
+80/tcp   open  http
+1900/tcp open  upnp
+MAC Address: 98:DE:D0:D4:05:C6 (TP-Link Technologies)
+
+# Nmap done at Sat Sep 12 04:16:15 2026 -- 1 IP address (1 host up) scanned in 4.76 seconds
