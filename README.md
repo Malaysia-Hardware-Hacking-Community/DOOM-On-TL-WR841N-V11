@@ -168,44 +168,44 @@ flowchart TD
     classDef router fill:#5c1e1e,stroke:#ff6b6b,color:#ffe8e8,stroke-width:2px
     classDef win fill:#4a1e4a,stroke:#c084fc,color:#f3e8ff,stroke-width:3px
 
-    subgraph P1["PHASE 1 — Swap the router's software for Linux (the only real exploit)"]
+    subgraph P1["PHASE 1 — Flash the router with Linux (the only real exploit)"]
         direction TB
-        A1["👆 Unplug the router,<br/>hold the Reset button,<br/>plug power back in while still holding"]:::physical
-        A2["🤖 Router's bootloader sees Reset is held<br/>and enters 'help, I'm broken' recovery mode."]:::router
-        A3["🤖 In recovery mode, the router shouts on the network:<br/>'Hey, computer at 192.168.0.66, send me<br/>a fresh copy of my software!'<br/><i>— no password, no signature check, no questions.</i>"]:::router
-        A4["💻 Our laptop IS the computer at 192.168.0.66.<br/>It's running a plain, boring file server (atftpd)<br/>that answers: 'Sure, here you go.'<br/><i>The file we hand over is OpenWrt — i.e. Linux —<br/>not the original TP-Link software.</i>"]:::laptop
-        A5["🤖 Router writes those bytes into its memory chip<br/>and reboots. It just installed whatever we gave it,<br/>because it never checked who sent it."]:::router
-        A6(["🎉 Router is now a Linux computer.<br/>LAN IP changes to 192.168.1.1.<br/>SSH is open. The admin password is empty.<br/>We own it."]):::win
+        A1["👆 Hold Reset while plugging in power"]:::physical
+        A2["🤖 Bootloader enters recovery mode"]:::router
+        A3["🤖 Router asks 192.168.0.66 for firmware<br/><i>no password, no signature check</i>"]:::router
+        A4["💻 Our laptop IS 192.168.0.66<br/>atftpd serves OpenWrt back"]:::laptop
+        A5["🤖 Router writes bytes to flash + reboots"]:::router
+        A6(["🎉 Linux at 192.168.1.1<br/>SSH root, no password"]):::win
         A1 --> A2 --> A3
-        A3 <==> |"Ethernet cable<br/>carries the file"| A4
+        A3 <==> |"Ethernet"| A4
         A4 --> A5 --> A6
     end
 
-    UART["🔍 The UART cable is a CAMERA, not a weapon.<br/>We clip it to a debug header on the circuit board<br/>and WATCH everything in Phase 1 happen in real time<br/>(text scrolling by: 'reset held → recovery mode →<br/>downloading file → writing to flash → Linux booting').<br/><br/>No firmware bytes travel over this cable.<br/>If you unplugged it, the exploit would still work —<br/>you just wouldn't see it happening."]:::watch
-    UART -. "observes Phase 1<br/>(does not touch it)" .-> P1
+    UART["🔍 UART cable: a CAMERA, not a weapon<br/>Watches Phase 1 but carries no bytes"]:::watch
+    UART -. "observes" .-> P1
 
-    A6 -. "same router. same hardware.<br/>but now a Linux box we SSH into as root.<br/>Phase 2 doesn't need a second exploit —<br/>we're just logged in." .-> B1
+    A6 -. "same device, now ours<br/>no new exploit" .-> B1
 
-    subgraph P2["PHASE 2 — Put DOOM on the Linux box (no new exploit — just copy + run)"]
+    subgraph P2["PHASE 2 — Put DOOM on the Linux box (just copy + run)"]
         direction TB
-        B1["💻 Build a DOOM program for the router's CPU.<br/><i>The router's chip reads bytes in a weird order<br/>(big-endian MIPS), so a normal DOOM download<br/>won't run — we have to compile one specifically.</i>"]:::laptop
-        B2["💻 Grab the real DOOM shareware level file<br/>(doom1.wad, ~4 MB — the full nine levels)."]:::laptop
-        B3["💻 Log in to the router over SSH (empty password)<br/>and copy both files into /tmp. Then just run it:<br/><code>./doomgeneric &amp;</code>"]:::laptop
-        B4["🤖 doomgeneric has a tiny web server built right in,<br/>listening on port 8000. It renders DOOM frames and<br/>streams them straight to any browser that connects —<br/>and reads your keypresses the same way."]:::router
-        B5(["🎮 On any phone or laptop on the Wi-Fi, open<br/>http://192.168.1.1:8000/ — DOOM appears.<br/>Your browser is talking directly to the router;<br/>the laptop isn't in the loop anymore."]):::win
+        B1["💻 Cross-compile DOOM for big-endian MIPS"]:::laptop
+        B2["💻 Grab the shareware doom1.wad"]:::laptop
+        B3["💻 SSH in, scp to /tmp, run"]:::laptop
+        B4["🤖 doomgeneric's built-in web server on :8000<br/>streams frames via WebSocket"]:::router
+        B5(["🎮 http://192.168.1.1:8000/<br/>browser talks straight to router"]):::win
         B1 --> B3
         B2 --> B3
         B3 --> B4 --> B5
     end
 
-    B5 -. "problem: the router's /tmp folder<br/>is just RAM. Reboot wipes DOOM." .-> C1
+    B5 -. "/tmp is RAM — reboot wipes DOOM" .-> C1
 
-    subgraph P3["BONUS — Making DOOM survive reboots (two web servers, two different jobs)"]
+    subgraph P3["BONUS — Making DOOM survive reboots"]
         direction TB
-        C1["🤖 The router has 4 MB of permanent storage total,<br/>and only ~236 KB is free after Linux installs itself.<br/>DOOM alone is 993 KB — 4× too big.<br/>So DOOM has to live in /tmp (RAM) instead."]:::router
-        C2["💻 Fix: our laptop runs a SECOND, different web server<br/>(python's http.server on port 8080). This one is NOT<br/>for playing DOOM — it just holds the DOOM files so<br/>the router can re-download them later."]:::laptop
-        C3["🤖 We put a tiny startup script in /etc/rc.local<br/>(a file that DOES persist). Every time the router boots,<br/>that script downloads DOOM from our laptop and<br/>launches it. DOOM is back within ~25 seconds of boot."]:::router
-        C4(["🎮 Router reboots → DOOM auto-restarts<br/>as long as the laptop is reachable on the LAN.<br/>Unplug the laptop and DOOM won't come back<br/>on the next reboot."]):::win
+        C1["🤖 Only 236 KB of flash — DOOM lives in RAM"]:::router
+        C2["💻 Laptop runs 2nd web server on :8080<br/>holds files for re-fetch"]:::laptop
+        C3["🤖 /etc/rc.local re-fetches each boot<br/>back online in ~25 s"]:::router
+        C4(["🎮 Reboots autonomously<br/>as long as laptop stays reachable"]):::win
         C1 --> C2 --> C3 --> C4
     end
 ```
