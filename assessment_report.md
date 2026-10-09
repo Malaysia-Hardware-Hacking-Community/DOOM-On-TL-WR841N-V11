@@ -227,7 +227,8 @@ Board runs at 3.3 V TTL levels, which matches the CP2102 natively; no level shif
 | **pyserial** | python serial | Tested for UART I/O; returned 0 bytes, superseded by `stty` FD | 
 | **moria** v0.1.0 | https://github.com/nmatt0/moria | IoT firmware identification & extraction (binwalk-class). Identifies/unpacks filesystems (SquashFS, JFFS2, UBIFS, ext, …), U-Boot uImage/FIT, archives; `-e` extracts, `-E` entropy. Used to map the stock+LEDE images, `--extract` → rooted tree for mithril |
 | **mithril** v0.1.3 | https://github.com/nmatt0/mithril | IoT static scanner: secrets, SBOM (CycloneDX/SPDX), CVEs (OSV+NVD mirror annotated w/ CISA KEV + EPSS), licenses. Used for the SBOM in §2 and to cross-check component versions/CVEs offline |
-| **PoC pipeline driver** | `tplink_wr841n_v11_root_shell_poc.sh` | Final attack automation: UART → TFTP recovery → SSH root chain (Appendix C). Companion analysis pipeline: `moria -e firmware.bin` → `mithril firmware.bin.extracted/`. Supersedes exploratory scratch scripts (`boot_interrupt.py`, `uart_bruteforce.py`, `ps_log.py`, `cve_test.py`, `cve_test_v2.py`, `pack_fw.sh`) |
+| **PoC driver (current)** | `pwn-router.sh` | Unified driver: `exploit:*` subcommands cover the base attack chain (UART → TFTP recovery → SSH root — §4–§8, Appendix C), `doom:*` subcommands cover the §10 payload deployment. SSH-multiplexed, poll-based, size-verified, with a watchdog supervisor + auto-recovery. Supersedes the original 12-step PoC. |
+| **PoC driver (original, preserved)** | `docs/legacy-scripts/tplink_wr841n_v11_root_shell_poc.sh` | Original 12-step attack automation, kept verbatim for provenance: UART wiring check → board fingerprint → firmware staging → network setup → TFTP serve → recovery trigger → flash verification → SSH root → on-router enumeration → proof of root → optional stock revert. Companion analysis pipeline: `moria -e firmware.bin` → `mithril firmware.bin.extracted/`. Superseded in-session by `pwn-router.sh`. Supersedes earlier scratch scripts (`boot_interrupt.py`, `uart_bruteforce.py`, `ps_log.py`, `cve_test.py`, `cve_test_v2.py`, `pack_fw.sh`). |
 
 ---
 
@@ -1174,24 +1175,43 @@ Host 192.168.1.1
 
 ## Appendix C: PoC Script
 
-The original 12-step proof-of-concept script, as written during the assessment,
-is preserved verbatim at `docs/legacy-scripts/tplink_wr841n_v11_root_shell_poc.sh`.
-A consolidated driver covering both the base chain and the §10 DOOM payload is
-`pwn-router.sh` in the top-level directory of this report bundle.
+**Current driver — `pwn-router.sh`** in the top-level directory of this
+report bundle. One unified script covering both the base attack chain
+(§4–§8) and the §10 DOOM payload deployment, with SSH multiplexing,
+file-size verification after every transfer, poll-based readiness
+checks, and a watchdog supervisor for auto-recovery.
 
 ```bash
-# Quick start:
-chmod +x tplink_wr841n_v11_root_shell_poc.sh
-./tplink_wr841n_v11_root_shell_poc.sh
+# Quick start — base attack chain only (§4–§8):
+./pwn-router.sh exploit:check-network      # L2 bridge diagnostic + fix instructions
+./pwn-router.sh exploit:flash-openwrt      # Reset-hold + TFTP recovery + verify
+
+# Full chain through §10 (base attack + DOOM payload):
+./pwn-router.sh exploit:flash-openwrt
+./pwn-router.sh doom:all                   # build → wad → deploy → persist → status
+
+# One-time-physical variant (§10 scenario, zero LAN presence after flash):
+./pwn-router.sh exploit:flash-remote-doom <public-url-serving-doom-artifacts>
+
+# Full subcommand list:
+./pwn-router.sh help
 ```
 
-The script walks through the full attack in 12 steps (mirroring Section 5):
-`UART wiring check → board fingerprint → firmware staging → network/
-bridge setup → TFTP server start → recovery trigger (reset-hold) →
-flash verification → cable move to LAN → SSH root login → on-router
-enumeration → proof of root → optional stock-firmware revert`. It
-verifies every stage against the live UART capture and aborts with
-diagnostics if a step fails.
+The `exploit:*` subcommands collectively cover the same 12 attack stages
+as the original PoC (mirroring Section 5): UART wiring check → board
+fingerprint → firmware staging → network/bridge setup → TFTP server start
+→ recovery trigger (reset-hold prompt) → flash verification against the
+live UART capture → cable move to LAN → SSH root login → on-router
+enumeration → proof of root → optional stock-firmware revert. Each stage
+is verified; a failed stage aborts with diagnostics instead of continuing.
+The `doom:*` subcommands add the §10 payload-deployment chain on top.
+
+**Original driver — preserved for provenance** at
+`docs/legacy-scripts/tplink_wr841n_v11_root_shell_poc.sh`. The 12-step
+monolithic shell script as written during the original assessment, kept
+verbatim so the writeup matches the artifact it was built from. Running
+either driver produces the same end state on the router; `pwn-router.sh`
+is the current one and the one the rest of this report bundle references.
 
 ---
 
